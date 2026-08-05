@@ -299,7 +299,11 @@
     <div id="l1-custom" style="display:none">
       <div class="flex justify-between items-center mb-3">
         <span class="text-sm text-muted" id="l1-custom-count"></span>
-        <button class="btn btn-primary btn-sm" onclick="openWordModal()">+ 新增敏感词</button>
+        <div class="flex gap-2">
+          <button class="btn btn-sm" onclick="openImportModal()">📥 导入</button>
+          <button class="btn btn-sm" onclick="exportWords()">📤 导出</button>
+          <button class="btn btn-primary btn-sm" onclick="openWordModal()">+ 新增敏感词</button>
+        </div>
       </div>
       <div class="tbl-wrap">
         <table>
@@ -504,6 +508,49 @@
   </div>
 </section>
 
+</div>
+
+<!-- ============ Import Modal (L1 词库导入) ============ -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal" style="max-width:620px">
+    <div class="modal-h"><span class="modal-t">导入自定义敏感词</span><button class="modal-x" onclick="closeModal('import-modal')">×</button></div>
+    <div class="modal-b">
+      <div class="note mb-3">支持 Excel(.xlsx) / CSV 格式，字段：词 / 分类 / 等级 / 说明。单次上限 5000 条，重复词自动跳过。</div>
+      <!-- Step 1: File Upload -->
+      <div id="import-step1">
+        <div id="import-dropzone" style="border:2px dashed var(--border2);border-radius:10px;padding:36px;text-align:center;cursor:pointer;transition:.2s" onclick="document.getElementById('import-file').click()" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border2)'">
+          <div style="font-size:36px;margin-bottom:8px">📄</div>
+          <div class="text-sm text-muted">点击选择文件或拖拽到此处</div>
+          <div class="text-xs text-muted mt-2">支持 .xlsx / .csv，最大 5MB</div>
+          <input type="file" id="import-file" accept=".xlsx,.csv" style="display:none" onchange="onFileSelected(this)">
+        </div>
+        <div class="flex gap-2 mt-3" style="flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="useDemoFile()">使用示例数据</button>
+          <a href="#" onclick="downloadTemplate();return false" class="btn btn-sm">下载导入模板</a>
+        </div>
+      </div>
+      <!-- Step 2: Preview -->
+      <div id="import-step2" style="display:none">
+        <div class="flex justify-between items-center mb-3">
+          <div class="text-sm">
+            <span style="color:var(--success)">✓ 有效 <b id="import-valid-count">0</b> 条</span>
+            <span style="color:var(--danger);margin-left:12px">✗ 错误 <b id="import-error-count">0</b> 条</span>
+          </div>
+          <button class="btn btn-sm" onclick="resetImport()">重新选择</button>
+        </div>
+        <div class="tbl-wrap" style="max-height:280px;overflow-y:auto">
+          <table>
+            <thead><tr><th style="width:30px">#</th><th>词</th><th>分类</th><th>等级</th><th>说明</th><th style="width:60px">状态</th></tr></thead>
+            <tbody id="import-preview-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('import-modal')">取消</button>
+      <button class="btn btn-primary" id="import-confirm-btn" onclick="confirmImport()" style="display:none">确认导入</button>
+    </div>
+  </div>
 </div>
 
 <!-- ============ Word Modal (L1 新增/编辑) ============ -->
@@ -727,6 +774,67 @@ function saveWord(){
   if(editCustomIdx>=0){Object.assign(CUSTOM[editCustomIdx],rec);showToast('已更新','success');}
   else{CUSTOM.unshift(rec);showToast('已新增，检测引擎实时生效','success');}
   closeModal('word-modal');renderL1();runDemo();
+}
+
+/* ===== L1 词库导入导出 ===== */
+let importPreviewData=[];
+function openImportModal(){resetImport();$('import-modal').classList.add('open');}
+function resetImport(){$('import-step1').style.display='block';$('import-step2').style.display='none';$('import-confirm-btn').style.display='none';$('import-file').value='';importPreviewData=[];}
+function onFileSelected(input){const f=input.files[0];if(!f)return;if(f.size>5*1024*1024){showToast('文件超过 5MB 限制','error');return;}const ext=f.name.split('.').pop().toLowerCase();if(ext!=='xlsx'&&ext!=='csv'){showToast('仅支持 .xlsx / .csv 格式','error');return;}showToast('文件已选择：'+f.name,'info');simulateParse(f.name);}
+function useDemoFile(){simulateParse('demo_sensitive_words.csv');}
+function simulateParse(filename){
+  // 模拟解析文件——生成示例数据含有效行与错误行
+  const demoValid=[
+    {w:'竞品A',cat:'版权侵权',lv:'mid',note:'竞品品牌名'},{w:'自家商标B',cat:'版权侵权',lv:'high',note:'自有品牌保护'},
+    {w:'保健品宣传',cat:'广告导流',lv:'low',note:'保健品类目'},{w:'绝对有效',cat:'广告导流',lv:'low',note:'绝对化用语'},
+    {w:'某明星昵称',cat:'名人肖像',lv:'high',note:'明星别名'},{w:'暴力血腥场景',cat:'暴力元素',lv:'mid',note:'暴力描述'},
+    {w:'加QQ群',cat:'广告导流',lv:'low',note:'导流'},{w:'某游戏角色',cat:'版权侵权',lv:'high',note:'游戏IP'},
+  ];
+  const demoError=[
+    {w:'',cat:'宗教相关',lv:'mid',note:'词为空'},{w:'赌博',cat:'违法违规',lv:'high',note:'与预置词重复'},
+  ];
+  importPreviewData=[...demoValid.map(d=>({...d,valid:true})),...demoError.map(d=>({...d,valid:false,reason:d.note}))];
+  renderImportPreview();
+}
+function renderImportPreview(){
+  const valid=importPreviewData.filter(d=>d.valid);
+  const errors=importPreviewData.filter(d=>!d.valid);
+  $('import-valid-count').textContent=valid.length;
+  $('import-error-count').textContent=errors.length;
+  $('import-preview-tbody').innerHTML=importPreviewData.map((d,i)=>`<tr>
+    <td class="text-xs text-muted">${i+1}</td>
+    <td class="mono">${d.w?esc(d.w):'<span style="color:var(--danger)">（空）</span>'}</td>
+    <td>${d.cat}</td>
+    <td><span class="badge ${LVB[d.lv]}">${LV[d.lv]}</span></td>
+    <td class="text-xs text-muted">${esc(d.note||'')}</td>
+    <td>${d.valid?'<span class="badge b-green">有效</span>':'<span class="badge b-red" title="'+esc(d.reason||'')+'">错误</span>'}</td>
+  </tr>`).join('');
+  $('import-step1').style.display='none';
+  $('import-step2').style.display='block';
+  $('import-confirm-btn').style.display=valid.length?'inline-flex':'none';
+}
+function confirmImport(){
+  const valid=importPreviewData.filter(d=>d.valid);
+  let added=0,skipped=0;
+  valid.forEach(d=>{if(!CUSTOM.some(c=>c.w===d.w)){CUSTOM.unshift({w:d.w,cat:d.cat,lv:d.lv,note:d.note,status:'启用'});added++;}else{skipped++;}});
+  closeModal('import-modal');renderL1();runDemo();
+  showToast(`导入完成：新增 ${added} 条${skipped?'，跳过重复 '+skipped+' 条':''}`,'success');
+}
+function exportWords(){
+  const all=[...PRESET.map(d=>({...d,src:'平台预置'})),...CUSTOM.map(d=>({...d,src:'自定义'}))];
+  const header='词,分类,等级,来源,说明,状态\n';
+  const lvMap={high:'高危',mid:'中危',low:'低危'};
+  const body=all.map(d=>`${d.w},${d.cat},${lvMap[d.lv]},${d.src||'平台预置'},${d.note||''},${d.status||'启用'}`).join('\n');
+  const csv='\uFEFF'+header+body;
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='敏感词库导出.csv';a.click();URL.revokeObjectURL(a.href);
+  showToast(`已导出 ${all.length} 条词库`,'success');
+}
+function downloadTemplate(){
+  const csv='\uFEFF词,分类,等级,说明\n示例词,违法违规,高危,示例说明\n';
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='敏感词导入模板.csv';a.click();URL.revokeObjectURL(a.href);
+  showToast('模板已下载','info');
 }
 
 /* =========================================================
