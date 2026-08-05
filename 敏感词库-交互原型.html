@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>敏感词库功能 · 交互原型</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:    #4F6EF7;
+      --primary-dk: #3A56D9;
+      --secondary:  #6B7280;
+      --success:    #10B981;
+      --warning:    #F59E0B;
+      --danger:     #EF4444;
+      --info:       #4F6EF7;
+      --bg:         #F9FAFB;
+      --surface:    #FFFFFF;
+      --border:     #E5E7EB;
+      --text:       #111827;
+      --text-muted:#6B7280;
+      --radius:     8px;
+      --shadow:     0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md:  0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--bg); color: var(--text); line-height: 1.5; }
+
+    /* ===== Top Nav ===== */
+    .appbar { background: var(--surface); border-bottom: 1px solid var(--border);
+              display: flex; align-items: center; padding: 0 20px; height: 60px; position: sticky; top: 0; z-index: 50; }
+    .appbar-logo { font-size: 16px; font-weight: 700; color: var(--primary); margin-right: 28px; white-space: nowrap; }
+    .nav-tabs { display: flex; gap: 4px; flex: 1; overflow-x: auto; }
+    .nav-tab { padding: 8px 14px; font-size: 14px; color: var(--text-muted); cursor: pointer;
+               border-radius: var(--radius); white-space: nowrap; transition: background .15s; }
+    .nav-tab:hover { background: var(--bg); color: var(--text); }
+    .nav-tab.active { background: #EEF2FF; color: var(--primary); font-weight: 600; }
+    .appbar-user { display: flex; align-items: center; gap: 8px; margin-left: 16px; }
+
+    /* ===== Page ===== */
+    .page { display: none; max-width: 1080px; margin: 0 auto; padding: 24px 20px 48px; }
+    .page.active { display: block; }
+    .page-head { margin-bottom: 20px; }
+    .page-title { font-size: 22px; font-weight: 700; }
+    .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ===== Card / Form ===== */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; }
+    .card-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 15px; font-weight: 600; }
+    .card-body { padding: 20px; }
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .form-control { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+                    font-size: 14px; background: var(--surface); outline: none; transition: border .15s, box-shadow .15s; font-family: inherit; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,.15); }
+    textarea.form-control { resize: vertical; line-height: 1.6; }
+    .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* ===== Buttons ===== */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius);
+           font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: opacity .15s, background .15s; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 5px 12px; font-size: 13px; }
+    .btn-lg { padding: 11px 22px; font-size: 15px; }
+
+    /* ===== Badge ===== */
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+    .badge-red    { background: #FEE2E2; color: #991B1B; }
+    .badge-yellow { background: #FEF3C7; color: #92400E; }
+    .badge-blue   { background: #EEF2FF; color: var(--primary); }
+    .badge-green  { background: #D1FAE5; color: #065F46; }
+    .badge-gray   { background: #F3F4F6; color: var(--text-muted); }
+
+    /* ===== Table ===== */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead th { padding: 10px 14px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase;
+               letter-spacing: .04em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+    tbody td { padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--bg); }
+
+    /* ===== Tabs (filter) ===== */
+    .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 16px; gap: 0; }
+    .tab { padding: 9px 16px; font-size: 14px; cursor: pointer; color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
+
+    /* ===== Stat ===== */
+    .grid { display: grid; gap: 16px; }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 700; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ===== Level / Validation feedback ===== */
+    .check-status { font-size: 13px; margin-top: 8px; padding: 8px 12px; border-radius: 6px; display: none; }
+    .check-status.show { display: block; }
+    .check-status.ok  { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+    .check-status.bad { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .hit-list { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .hit-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 8px; border-radius: 6px; background: #fff; border: 1px solid var(--border); }
+
+    .preview-box { background: #F8FAFC; border: 1px dashed var(--border); border-radius: 6px; padding: 12px 14px;
+                   font-size: 14px; line-height: 1.8; min-height: 60px; white-space: pre-wrap; word-break: break-all; }
+    mark.hl-high { background: #FEE2E2; color: #991B1B; padding: 0 2px; border-radius: 3px; font-weight: 600; }
+    mark.hl-mid  { background: #FEF3C7; color: #92400E; padding: 0 2px; border-radius: 3px; }
+    mark.hl-low  { background: #DBEAFE; color: #1E40AF; padding: 0 2px; border-radius: 3px; }
+
+    /* ===== Block alert ===== */
+    .block-alert { background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; display: none; }
+    .block-alert.show { display: block; }
+    .block-alert h4 { color: #991B1B; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+    .block-alert p { font-size: 13px; color: #7F1D1D; margin-top: 6px; }
+
+    /* ===== Modal ===== */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-md); width: 460px; max-width: calc(100vw - 40px); }
+    .modal-header { padding: 18px 22px 0; display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 16px; font-weight: 600; }
+    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); line-height: 1; }
+    .modal-body { padding: 14px 22px; font-size: 14px; }
+    .modal-footer { padding: 0 22px 18px; display: flex; justify-content: flex-end; gap: 8px; }
+
+    /* ===== Toast ===== */
+    .toast-stack { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 2000; }
+    .toast { background: #1F2937; color: #fff; padding: 12px 16px; border-radius: var(--radius); font-size: 14px; box-shadow: var(--shadow-md); max-width: 340px; animation: slideIn .2s ease; }
+    .toast.success { background: #065F46; }
+    .toast.error   { background: #991B1B; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ===== Demo legend cards ===== */
+    .legend-card { border: 1px solid var(--border); border-radius: 10px; padding: 16px; background: var(--surface); box-shadow: var(--shadow); }
+    .legend-card h4 { font-size: 15px; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .legend-card p { font-size: 13px; color: var(--text-muted); }
+
+    .chart-ph { background: var(--bg); border: 2px dashed var(--border); border-radius: var(--radius); height: 200px;
+                display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px; }
+
+    .proto-note { background: #FEFCE8; border: 1px dashed var(--warning); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #92400E; margin-top: 10px; }
+    .proto-note::before { content: "📝 注："; font-weight: 600; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .text-muted { color: var(--text-muted); } .text-sm { font-size: 13px; } .mb-2 { margin-bottom: 8px; }
+    .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; }
+    .flex { display: flex; } .items-center { align-items: center; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; }
+    .justify-between { justify-content: space-between; }
+  </style>
+</head>
+<body>
+
+<!-- ===== App Bar ===== -->
+<header class="appbar">
+  <div class="appbar-logo">🎬 漫剧工坊 · 敏感词库</div>
+  <nav class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('page-character', this)">① 角色创建</div>
+    <div class="nav-tab" onclick="showPage('page-storyboard', this)">② 分镜提示词</div>
+    <div class="nav-tab" onclick="showPage('page-demo', this)">③ 拦截状态演示</div>
+    <div class="nav-tab" onclick="showPage('page-library', this)">④ 词库管理（运营）</div>
+    <div class="nav-tab" onclick="showPage('page-dashboard', this)">⑤ 拦截数据看板</div>
+  </nav>
+  <div class="appbar-user">
+    <div class="badge badge-blue">创作者</div>
+    <div class="badge badge-gray">运营</div>
+  </div>
+</header>
+
+<!-- ============ ① 角色创建 ============ -->
+<section class="page active" id="page-character">
+  <div class="page-head">
+    <div class="page-title">创建角色</div>
+    <div class="page-sub">角色的名称、标签、描述均会经过敏感词实时校验，命中后按等级处置。</div>
+  </div>
+
+  <div class="block-alert" id="char-block">
+    <h4>⛔ 内容违反平台规范，无法生成</h4>
+    <p id="char-block-detail">检测到高危敏感词，已阻止本次生成。如有疑问可联系平台申诉。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">角色信息</span></div>
+    <div class="card-body">
+      <div class="form-group">
+        <label class="form-label">角色名称 <span style="color:var(--danger)">*</span></label>
+        <input class="form-control" id="char-name" placeholder="例如：都市少年 / 古风侠客" oninput="checkField('char-name')" />
+        <div class="check-status" id="st-char-name"></div>
+      </div>
+      <div class="row-2">
+        <div class="form-group">
+          <label class="form-label">标签（用逗号分隔）</label>
+          <input class="form-control" id="char-tags" placeholder="例如：少年,热血,神秘" oninput="checkField('char-tags')" />
+          <div class="check-status" id="st-char-tags"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">角色定位</label>
+          <input class="form-control" id="char-role" placeholder="例如：主角 / 反派" oninput="checkField('char-role')" />
+          <div class="check-status" id="st-char-role"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">角色描述（提示词）</label>
+        <textarea class="form-control" id="char-desc" rows="4" placeholder="描述角色的外貌、服装、性格与场景…" oninput="checkField('char-desc')"></textarea>
+        <div class="check-status" id="st-char-desc"></div>
+      </div>
+      <div class="flex justify-between items-center mt-2">
+        <span class="text-sm text-muted">提交时按最高命中等级处置：高危拦截 / 中危确认 / 低危提示</span>
+        <button class="btn btn-primary btn-lg" onclick="generateCharacter()">生成角色</button>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">此为创作者端原型。实时校验在「输入即检测」与「提交时拦截」两处生效；命中高危直接禁止生成，中危弹二次确认，低危仅标注。演示词为示例占位，真实词库由平台合规团队维护，本原型不收录真实敏感词。</div>
+</section>
+
+<!-- ============ ② 分镜提示词编辑器 ============ -->
+<section class="page" id="page-storyboard">
+  <div class="page-head">
+    <div class="page-title">分镜提示词编辑器</div>
+    <div class="page-sub">编写分镜脚本时实时高亮命中词，点击「生成分镜」触发分级拦截。</div>
+  </div>
+
+  <div class="block-alert" id="sb-block">
+    <h4>⛔ 提示词违反平台规范，无法生成</h4>
+    <p id="sb-block-detail">检测到高危敏感词，已阻止本次分镜生成。</p>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">分镜脚本</span><span class="badge badge-gray" id="sb-count">0 字</span></div>
+    <div class="card-body">
+      <textarea class="form-control" id="sb-text" rows="6" placeholder="镜头1：少女站在霓虹街道中央，转身微笑…" oninput="checkStoryboard()"></textarea>
+      <div class="check-status" id="st-sb"></div>
+      <div class="form-hint mt-2">实时高亮预览（命中的敏感词会被标色）：</div>
+      <div class="preview-box" id="sb-preview">在上方输入提示词，命中的敏感词将在此高亮显示…</div>
+      <div class="flex justify-between items-center mt-4">
+        <span class="text-sm text-muted">红色=高危拦截 ｜ 黄色=中危确认 ｜ 蓝色=低危提示</span>
+        <button class="btn btn-primary btn-lg" onclick="generateStoryboard()">生成分镜</button>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">分镜提示词是生成前最后一道文本关卡。原型用纯前端字符串匹配演示「高亮 + 分级拦截」，真实环境应接入服务端校验引擎（避免前端绕过），并支持变体/谐音识别（P1）。</div>
+</section>
+
+<!-- ============ ③ 拦截状态演示 ============ -->
+<section class="page" id="page-demo">
+  <div class="page-head">
+    <div class="page-title">拦截状态演示</div>
+    <div class="page-sub">三级处置策略一览，点击按钮可快速查看每种状态的界面表现（便于评审演示）。</div>
+  </div>
+
+  <div class="grid grid-3 mb-2">
+    <div class="legend-card">
+      <h4><span class="badge badge-red">高危</span> 硬拦截</h4>
+      <p>政治敏感、违法违规、名人肖像、版权侵权等合规红线（100% 触发）。命中即禁止生成，提示违反规范，不给绕过入口。</p>
+      <button class="btn btn-danger btn-sm mt-3" onclick="demoHigh()">触发高危拦截</button>
+    </div>
+    <div class="legend-card">
+      <h4><span class="badge badge-yellow">中危</span> 二次确认</h4>
+      <p>宗教相关、暴力元素、性感类等谨慎使用词。弹窗强提醒，用户确认后才继续生成。</p>
+      <button class="btn btn-secondary btn-sm mt-3" onclick="demoMid()">触发中危确认</button>
+    </div>
+    <div class="legend-card">
+      <h4><span class="badge badge-blue">低危</span> 仅标注</h4>
+      <p>广告导流、轻度违规词。行内高亮提示，不阻断，用户可直接继续。</p>
+      <button class="btn btn-secondary btn-sm mt-3" onclick="demoLow()">触发低危提示</button>
+    </div>
+  </div>
+
+  <div class="block-alert" id="demo-block">
+    <h4>⛔ 内容违反平台规范，无法生成</h4>
+    <p id="demo-block-detail"></p>
+  </div>
+  <div class="proto-note">评审时可用此页快速对比三种处置 UI；无需回到表单输入即可演示完整交互。</div>
+</section>
+
+<!-- ============ ④ 词库管理（运营） ============ -->
+<section class="page" id="page-library">
+  <div class="page-head">
+    <div class="page-title">敏感词库管理</div>
+    <div class="page-sub">分类与示例词参考《Seedance 2.0 提示词敏感判定规则整理（公开资料）》第八节：100% 触发（高危）· 谨慎使用（中危）· 广告导流（低危）。系统预置只读，自定义可增删改。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">词库列表</span>
+      <button class="btn btn-primary btn-sm" onclick="openWordModal()">+ 新增敏感词</button>
+    </div>
+    <div class="card-body">
+      <div class="tabs">
+        <div class="tab active" onclick="filterWords(this,'all')">全部</div>
+        <div class="tab" onclick="filterWords(this,'high')">高危</div>
+        <div class="tab" onclick="filterWords(this,'mid')">中危</div>
+        <div class="tab" onclick="filterWords(this,'low')">低危</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>敏感词</th><th>分类</th><th>等级</th><th>来源</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody id="word-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">词库分类与示例词参考《Seedance 2.0 提示词敏感判定规则整理（公开资料）》第八节。系统预置词由平台合规团队维护（只读）；自定义词可增删改并实时生效于角色/分镜检测。真实运营后台还需支持：批量导入、生效范围（全局/指定业务）、灰度、命中统计联动。演示词为示例占位，非完整词库，且不收录真实敏感人名。</div>
+</section>
+
+<!-- ============ ⑤ 拦截数据看板 ============ -->
+<section class="page" id="page-dashboard">
+  <div class="page-head">
+    <div class="page-title">拦截数据看板</div>
+    <div class="page-sub">运营视角：校验量、拦截量、分类分布与近期命中记录，用于持续优化词库、降低误伤。</div>
+  </div>
+
+  <div class="grid grid-4 mb-2">
+    <div class="stat-card"><div class="stat-label">今日提示词校验</div><div class="stat-value">18,420</div><div class="stat-sub">↑ 6.2% 较昨日</div></div>
+    <div class="stat-card"><div class="stat-label">今日命中拦截</div><div class="stat-value">1,306</div><div class="stat-sub">拦截率 7.1%</div></div>
+    <div class="stat-card"><div class="stat-label">高危硬拦截</div><div class="stat-value">214</div><div class="stat-sub">合规红线 0 漏放目标</div></div>
+    <div class="stat-card"><div class="stat-label">误拦截申诉</div><div class="stat-value">37</div><div class="stat-sub">申诉率 2.8%</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">命中分类分布</span></div>
+    <div class="card-body">
+      <div class="chart-ph">📊 分类分布柱状图占位（政治敏感 / 违法违规 / 名人肖像 / 版权侵权 / 宗教相关 / 暴力元素 / 性感类 / 广告导流）</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">近期命中记录</span></div>
+    <div class="card-body">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>时间</th><th>用户</th><th>命中词</th><th>等级</th><th>处置</th></tr></thead>
+          <tbody>
+            <tr><td class="text-sm text-muted">14:32</td><td>user_8821</td><td>暴力恐怖</td><td><span class="badge badge-red">高危</span></td><td><span class="badge badge-red">已拦截</span></td></tr>
+            <tr><td class="text-sm text-muted">14:28</td><td>user_5510</td><td>裸露</td><td><span class="badge badge-yellow">中危</span></td><td><span class="badge badge-yellow">已确认</span></td></tr>
+            <tr><td class="text-sm text-muted">14:21</td><td>creator_07</td><td>加微信</td><td><span class="badge badge-blue">低危</span></td><td><span class="badge badge-blue">已标注</span></td></tr>
+            <tr><td class="text-sm text-muted">14:15</td><td>user_3390</td><td>傻子</td><td><span class="badge badge-yellow">中危</span></td><td><span class="badge badge-yellow">已确认</span></td></tr>
+            <tr><td class="text-sm text-muted">14:09</td><td>user_7712</td><td>代购</td><td><span class="badge badge-blue">低危</span></td><td><span class="badge badge-blue">已标注</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">数据为模拟演示。指标口径建议：拦截率 = 命中拦截数 / 校验总数；误拦截申诉率 = 申诉成立数 / 命中数。需与需求概要第八节指标定义对齐。</div>
+</section>
+
+<!-- ===== Word Modal (新增 / 编辑) ===== -->
+<div class="modal-overlay" id="word-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="wm-title">新增自定义敏感词</span>
+      <button class="modal-close" onclick="closeModal('word-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">敏感词 <span style="color:var(--danger)">*</span></label>
+        <input class="form-control" id="wm-word" placeholder="输入需要拦截的词" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类（参考 Seedance 公开合规指南）</label>
+        <select class="form-control" id="wm-cat">
+          <option>政治敏感</option><option>违法违规</option><option>名人肖像</option><option>版权侵权</option>
+          <option>宗教相关</option><option>暴力元素</option><option>性感类</option><option>广告导流</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">等级</label>
+        <select class="form-control" id="wm-level">
+          <option value="high">高危（硬拦截 · 100% 触发）</option>
+          <option value="mid">中危（二次确认 · 谨慎使用）</option>
+          <option value="low">低危（仅标注 · 广告导流）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">来源</label>
+        <select class="form-control" id="wm-src">
+          <option>平台预置</option><option>自定义</option>
+        </select>
+      </div>
+      <div class="proto-note">分类与示例词参考《Seedance 2.0 提示词敏感判定规则整理（公开资料）》第八节。系统预置红线由平台合规团队维护，自定义词仅对本人 / 本业务生效。请勿用谐音、拆字、暗语规避审核。</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('word-modal')">取消</button>
+      <button class="btn btn-primary" onclick="saveWord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Delete Confirm Modal ===== -->
+<div class="modal-overlay" id="wm-del-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <span class="modal-title">⚠ 确认删除</span>
+      <button class="modal-close" onclick="closeModal('wm-del-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-sm" id="wm-del-text"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('wm-del-modal')">取消</button>
+      <button class="btn btn-danger" onclick="confirmDelWord()">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Mid-risk Confirm Modal ===== -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚠ 检测到中危敏感词</span>
+      <button class="modal-close" onclick="closeModal('confirm-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-sm text-muted">以下内容可能违反平台社区规范，确认后仍继续生成吗？</p>
+      <div class="hit-list mt-2" id="confirm-hits"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('confirm-modal')">取消</button>
+      <button class="btn btn-primary" onclick="confirmProceed()">确认继续生成</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<script>
+  /* ===== 等级常量 ===== */
+  const LEVEL_LABEL = { high: '高危', mid: '中危', low: '低危' };
+  const LEVEL_BADGE  = { high: 'badge-red', mid: 'badge-yellow', low: 'badge-blue' };
+
+  /* ===== detection（词库管理与检测共用 WORDS；新增/编辑/删除自定义词实时生效）=====
+     参考《Seedance 2.0 提示词敏感判定规则整理（公开资料）》第八节：
+     100% 触发 → 高危（硬拦截）；谨慎使用 → 中危（二次确认）；广告导流 → 低危（仅标注，平台补充）
+  */
+  function detect(text) {
+    const hits = [];
+    if (!text) return hits;
+    WORDS.filter(w => w.status === '启用').forEach(d => {
+      let idx = text.indexOf(d.word);
+      while (idx !== -1) {
+        hits.push({ word: d.word, level: d.level, cat: d.cat, index: idx, length: d.word.length });
+        idx = text.indexOf(d.word, idx + d.word.length);
+      }
+    });
+    return hits;
+  }
+  function aggregate(texts) {
+    let all = [];
+    texts.forEach(t => { all = all.concat(detect(t)); });
+    return all;
+  }
+  function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  /* ===== page switch ===== */
+  function showPage(id, el) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  /* ===== live field check (角色页) ===== */
+  function renderStatus(boxId, hits) {
+    const box = document.getElementById(boxId);
+    box.className = 'check-status';
+    if (!hits.length) {
+      box.classList.add('show', 'ok');
+      box.innerHTML = '✓ 未检测到敏感词';
+      return;
+    }
+    box.classList.add('show', 'bad');
+    let chips = hits.map(h => `<span class="hit-chip"><span class="badge ${LEVEL_BADGE[h.level]}">${LEVEL_LABEL[h.level]}</span>${escapeHtml(h.word)}</span>`).join('');
+    box.innerHTML = `⚠ 检测到 ${hits.length} 处敏感词：${chips}`;
+  }
+  function checkField(id) {
+    renderStatus('st-' + id, detect(document.getElementById(id).value));
+  }
+
+  /* ===== storyboard live check ===== */
+  function checkStoryboard() {
+    const text = document.getElementById('sb-text').value;
+    document.getElementById('sb-count').textContent = text.length + ' 字';
+    const hits = detect(text);
+    // status
+    renderStatus('st-sb', hits);
+    // highlight preview
+    const preview = document.getElementById('sb-preview');
+    if (!text) { preview.textContent = '在上方输入提示词，命中的敏感词将在此高亮显示…'; return; }
+    let out = '', cursor = 0;
+    const sorted = hits.slice().sort((a,b) => a.index - b.index);
+    sorted.forEach(h => {
+      if (h.index < cursor) return; // skip overlap
+      out += escapeHtml(text.slice(cursor, h.index));
+      out += `<mark class="hl-${h.level}">${escapeHtml(h.word)}</mark>`;
+      cursor = h.index + h.length;
+    });
+    out += escapeHtml(text.slice(cursor));
+    preview.innerHTML = out;
+  }
+
+  /* ===== generation flow (shared) ===== */
+  let pendingHits = [];
+  function decide(hits, onProceed) {
+    pendingHits = hits;
+    const hasHigh = hits.some(h => h.level === 'high');
+    const hasMid  = hits.some(h => h.level === 'mid');
+    const hasLow  = hits.some(h => h.level === 'low');
+    if (hasHigh) {
+      showBlock('当前页'); // placeholder; real pages set their own block
+      return 'block';
+    }
+    if (hasMid)  { openConfirm(hits); return 'confirm'; }
+    if (hasLow)  { showToast('已标注 ' + hits.length + ' 处低危词，正常生成', 'success'); onProceed(); return 'low'; }
+    showToast('校验通过，已开始生成', 'success'); onProceed(); return 'ok';
+  }
+
+  /* 角色页 */
+  function generateCharacter() {
+    hideBlock('char-block');
+    const hits = aggregate([
+      document.getElementById('char-name').value,
+      document.getElementById('char-tags').value,
+      document.getElementById('char-role').value,
+      document.getElementById('char-desc').value,
+    ]);
+    const r = decide(hits, () => showToast('角色生成中…', 'success'));
+    if (r === 'block') {
+      const d = document.getElementById('char-block-detail');
+      d.textContent = '检测到高危敏感词（' + hits.filter(h=>h.level==='high').map(h=>h.word).join('、') + '），已阻止本次生成。如有疑问可联系平台申诉。';
+      showBlockEl('char-block');
+    }
+  }
+  /* 分镜页 */
+  function generateStoryboard() {
+    hideBlock('sb-block');
+    const hits = detect(document.getElementById('sb-text').value);
+    const r = decide(hits, () => showToast('分镜生成中…', 'success'));
+    if (r === 'block') {
+      const d = document.getElementById('sb-block-detail');
+      d.textContent = '检测到高危敏感词（' + hits.filter(h=>h.level==='high').map(h=>h.word).join('、') + '），已阻止本次分镜生成。';
+      showBlockEl('sb-block');
+    }
+  }
+  function showBlockEl(id){ document.getElementById(id).classList.add('show'); }
+  function hideBlock(id){ document.getElementById(id).classList.remove('show'); }
+
+  /* ===== demo page ===== */
+  function demoHigh() {
+    document.getElementById('demo-block-detail').textContent = '命中高危敏感词（例如：毒品 / 恐怖主义 / 漫威角色，属 100% 触发类），已阻止生成。';
+    document.getElementById('demo-block').classList.add('show');
+    showToast('高危：已硬拦截', 'error');
+  }
+  function demoMid() {
+    const hits = [{ word: '比基尼', level: 'mid', cat: '性感类' }, { word: '道士', level: 'mid', cat: '宗教相关' }];
+    openConfirm(hits);
+  }
+  function demoLow() {
+    showToast('低危：已标注「加微信」，不阻断生成', 'success');
+  }
+
+  /* ===== confirm modal ===== */
+  function openConfirm(hits) {
+    document.getElementById('confirm-hits').innerHTML = hits.map(h =>
+      `<span class="hit-chip"><span class="badge ${LEVEL_BADGE[h.level]}">${LEVEL_LABEL[h.level]}</span>${escapeHtml(h.word)} · ${h.cat}</span>`).join('');
+    document.getElementById('confirm-modal').classList.add('open');
+  }
+  function confirmProceed() {
+    closeModal('confirm-modal');
+    showToast('已确认，开始生成', 'success');
+  }
+
+  /* ===== word library（参考腾讯文档 Seedance 2.0 公开合规指南 第八节）=====
+     100% 触发（高危·硬拦截）：政治敏感 / 违法违规 / 名人肖像 / 版权侵权
+     谨慎使用（中危·二次确认）：宗教相关 / 暴力元素 / 性感类
+     平台补充（低危·仅标注）：广告导流
+  */
+  const WORDS = [
+    // —— 100% 触发：政治敏感类 ——
+    { word: '敏感政治人物姓名', cat: '政治敏感', level: 'high', src: '平台预置', status: '启用' },
+    { word: '涉港澳台敏感表述', cat: '政治敏感', level: 'high', src: '平台预置', status: '启用' },
+    { word: '涉疆敏感表述',     cat: '政治敏感', level: 'high', src: '平台预置', status: '启用' },
+    { word: '涉藏敏感表述',     cat: '政治敏感', level: 'high', src: '平台预置', status: '启用' },
+    // —— 100% 触发：违法违规类 ——
+    { word: '毒品',     cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '赌博',     cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '色情',     cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '暴力',     cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '恐怖主义', cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '宗教极端', cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '枪支',     cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '弹药',     cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '管制刀具', cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    { word: '诈骗',     cat: '违法违规', level: 'high', src: '平台预置', status: '启用' },
+    // —— 100% 触发：名人肖像类 ——
+    { word: '明星脸',       cat: '名人肖像', level: 'high', src: '平台预置', status: '启用' },
+    { word: '公众人物姓名', cat: '名人肖像', level: 'high', src: '平台预置', status: '启用' },
+    { word: '演员昵称',     cat: '名人肖像', level: 'high', src: '平台预置', status: '启用' },
+    { word: '歌手别名',     cat: '名人肖像', level: 'high', src: '平台预置', status: '启用' },
+    // —— 100% 触发：版权侵权类 ——
+    { word: '漫威角色',       cat: '版权侵权', level: 'high', src: '平台预置', status: '启用' },
+    { word: '迪士尼角色',     cat: '版权侵权', level: 'high', src: '平台预置', status: '启用' },
+    { word: '国产动画角色',   cat: '版权侵权', level: 'high', src: '平台预置', status: '启用' },
+    { word: '游戏专属术语',   cat: '版权侵权', level: 'high', src: '平台预置', status: '启用' },
+    // —— 谨慎使用：宗教相关类（中危）——
+    { word: '和尚',   cat: '宗教相关', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '道士',   cat: '宗教相关', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '唐僧',   cat: '宗教相关', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '教堂',   cat: '宗教相关', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '清真寺', cat: '宗教相关', level: 'mid', src: '平台预置', status: '启用' },
+    // —— 谨慎使用：暴力元素类（中危）——
+    { word: '打斗', cat: '暴力元素', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '枪杀', cat: '暴力元素', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '死亡', cat: '暴力元素', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '血腥', cat: '暴力元素', level: 'mid', src: '平台预置', status: '启用' },
+    // —— 谨慎使用：性感类（中危）——
+    { word: '比基尼', cat: '性感类', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '露胸',   cat: '性感类', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '丝袜',   cat: '性感类', level: 'mid', src: '平台预置', status: '启用' },
+    { word: '挑逗',   cat: '性感类', level: 'mid', src: '平台预置', status: '启用' },
+    // —— 平台补充：广告导流类（低危·仅标注，非 Seedance 文档直接列出）——
+    { word: '加微信', cat: '广告导流', level: 'low', src: '平台预置', status: '启用' },
+    { word: '代购',   cat: '广告导流', level: 'low', src: '自定义',   status: '启用' },
+    { word: '私聊',   cat: '广告导流', level: 'low', src: '自定义',   status: '停用' },
+  ];
+  let wordFilter = 'all';
+  let wordEditId = null;     // 编辑中的词索引（自定义词）；null 表示新增
+  let wordDelIdx = null;      // 待删除词索引
+
+  function renderWords() {
+    const tb = document.getElementById('word-tbody');
+    const rows = WORDS.filter(w => wordFilter === 'all' || w.level === wordFilter);
+    tb.innerHTML = rows.map((w, i) => {
+      const isSys = w.src === '平台预置';
+      const op = isSys
+        ? `<span class="text-sm text-muted">系统预置 · 只读</span>`
+        : `<button class="btn btn-secondary btn-sm" onclick="openWordModal(${i})">编辑</button>
+           <button class="btn btn-danger btn-sm" onclick="openDelModal(${i})">删除</button>`;
+      return `
+      <tr>
+        <td>${escapeHtml(w.word)}</td>
+        <td>${w.cat}</td>
+        <td><span class="badge ${LEVEL_BADGE[w.level]}">${LEVEL_LABEL[w.level]}</span></td>
+        <td>${isSys ? '<span class="badge badge-gray">平台预置</span>' : '<span class="badge badge-blue">自定义</span>'}</td>
+        <td>${w.status === '启用' ? '<span class="badge badge-green">启用</span>' : '<span class="badge badge-gray">停用</span>'}</td>
+        <td>${op}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="6" class="text-muted text-sm">暂无数据</td></tr>`;
+  }
+  function filterWords(el, level) {
+    document.querySelectorAll('#page-library .tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active'); wordFilter = level; renderWords();
+  }
+  function openWordModal(i) {
+    wordEditId = (i === undefined || i === null) ? null : i;
+    document.getElementById('wm-title').textContent = wordEditId === null ? '新增自定义敏感词' : '编辑自定义敏感词';
+    if (wordEditId === null) {
+      document.getElementById('wm-word').value = '';
+      document.getElementById('wm-cat').value = '广告导流';
+      document.getElementById('wm-level').value = 'low';
+      document.getElementById('wm-src').value = '自定义';
+    } else {
+      const w = WORDS[wordEditId];
+      document.getElementById('wm-word').value = w.word;
+      document.getElementById('wm-cat').value = w.cat;
+      document.getElementById('wm-level').value = w.level;
+      document.getElementById('wm-src').value = w.src;
+    }
+    document.getElementById('word-modal').classList.add('open');
+  }
+  function saveWord() {
+    const w = document.getElementById('wm-word').value.trim();
+    if (!w) { showToast('请输入敏感词', 'error'); return; }
+    const cat = document.getElementById('wm-cat').value;
+    const level = document.getElementById('wm-level').value;
+    const src = document.getElementById('wm-src').value;
+    if (wordEditId === null) {
+      WORDS.unshift({ word: w, cat, level, src, status: '启用' });
+      showToast('已新增自定义敏感词', 'success');
+    } else {
+      Object.assign(WORDS[wordEditId], { word: w, cat, level, src });
+      showToast('已更新自定义敏感词', 'success');
+    }
+    closeModal('word-modal'); renderWords();
+    document.getElementById('wm-word').value = '';
+  }
+  function openDelModal(i) {
+    wordDelIdx = i;
+    const w = WORDS[i];
+    document.getElementById('wm-del-text').textContent = `确定要删除自定义敏感词「${w.word}」（分类：${w.cat}）吗？删除后将不再参与校验与拦截。`;
+    document.getElementById('wm-del-modal').classList.add('open');
+  }
+  function confirmDelWord() {
+    WORDS.splice(wordDelIdx, 1);
+    closeModal('wm-del-modal'); renderWords();
+    showToast('已删除', 'success');
+  }
+
+  /* ===== modal / toast utils ===== */
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === e.currentTarget) m.classList.remove('open'); }));
+  function showToast(msg, type = '') {
+    const t = document.createElement('div'); t.className = 'toast ' + type; t.textContent = msg;
+    document.getElementById('toast-stack').appendChild(t); setTimeout(() => t.remove(), 3000);
+  }
+
+  /* init */
+  renderWords();
+</script>
+</body>
+</html>

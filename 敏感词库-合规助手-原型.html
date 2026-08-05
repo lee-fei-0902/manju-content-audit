@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seedance 2.0 提示词合规助手 · 交互原型</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary:    #4F6EF7;
+      --primary-dk: #3A56D9;
+      --success:    #10B981;
+      --warning:    #F59E0B;
+      --danger:     #EF4444;
+      --info:       #4F6EF7;
+      --bg:         #F9FAFB;
+      --surface:    #FFFFFF;
+      --border:     #E5E7EB;
+      --text:       #111827;
+      --text-muted:#6B7280;
+      --radius:     8px;
+      --shadow:     0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md:  0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    /* App bar */
+    .appbar { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 18px; height: 58px; position: sticky; top: 0; z-index: 50; }
+    .appbar-logo { font-size: 15px; font-weight: 700; color: var(--primary); margin-right: 18px; white-space: nowrap; }
+    .nav-tabs { display: flex; gap: 2px; flex: 1; overflow-x: auto; }
+    .nav-tab { padding: 8px 12px; font-size: 13.5px; color: var(--text-muted); cursor: pointer; border-radius: var(--radius); white-space: nowrap; }
+    .nav-tab:hover { background: var(--bg); color: var(--text); }
+    .nav-tab.active { background: #EEF2FF; color: var(--primary); font-weight: 600; }
+
+    .page { display: none; max-width: 1040px; margin: 0 auto; padding: 22px 18px 48px; }
+    .page.active { display: block; }
+    .page-head { margin-bottom: 18px; }
+    .page-title { font-size: 22px; font-weight: 700; }
+    .page-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 16px; }
+    .card-header { padding: 13px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 15px; font-weight: 600; }
+    .card-body { padding: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .form-control { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; background: var(--surface); outline: none; transition: border .15s, box-shadow .15s; font-family: inherit; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,110,247,.15); }
+    textarea.form-control { resize: vertical; line-height: 1.7; }
+    .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; border: none; }
+    .btn:hover { opacity: .85; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-secondary { background: var(--bg); border: 1px solid var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-sm { padding: 5px 12px; font-size: 13px; }
+    .btn-lg { padding: 10px 20px; font-size: 15px; }
+
+    .badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+    .badge-red    { background: #FEE2E2; color: #991B1B; }
+    .badge-yellow { background: #FEF3C7; color: #92400E; }
+    .badge-blue   { background: #EEF2FF; color: var(--primary); }
+    .badge-green  { background: #D1FAE5; color: #065F46; }
+    .badge-gray   { background: #F3F4F6; color: var(--text-muted); }
+
+    .grid { display: grid; gap: 14px; }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); }
+    .stat-label { font-size: 13px; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-value { font-size: 22px; font-weight: 700; }
+
+    /* formula */
+    .formula { background: #EEF2FF; border: 1px solid #C7D2FE; border-radius: 10px; padding: 16px 18px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .formula .f-item { background: #fff; border: 1px solid #C7D2FE; border-radius: 6px; padding: 6px 12px; font-size: 13px; font-weight: 500; }
+    .formula .f-op { color: var(--primary); font-weight: 700; }
+
+    /* details / accordion */
+    details.cat { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 10px; background: var(--surface); overflow: hidden; }
+    details.cat > summary { padding: 13px 16px; cursor: pointer; font-size: 14.5px; font-weight: 600; list-style: none; display: flex; align-items: center; gap: 10px; }
+    details.cat > summary::-webkit-details-marker { display: none; }
+    details.cat > summary::after { content: "▸"; margin-left: auto; color: var(--text-muted); transition: transform .15s; }
+    details.cat[open] > summary::after { transform: rotate(90deg); }
+    details.cat .cat-body { padding: 0 16px 14px 16px; font-size: 13.5px; }
+    details.cat .cat-body .row { margin-top: 8px; }
+    details.cat .cat-body .lbl { font-weight: 600; color: var(--text-muted); font-size: 12.5px; }
+
+    /* word groups */
+    .wg { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+    .wg > summary { padding: 12px 16px; cursor: pointer; font-weight: 600; font-size: 14px; list-style: none; display: flex; align-items: center; gap: 10px; background: var(--surface); }
+    .wg > summary::-webkit-details-marker { display: none; }
+    .wg > summary::after { content: "▸"; margin-left: auto; color: var(--text-muted); }
+    .wg[open] > summary::after { transform: rotate(90deg); }
+    .wg .wg-body { padding: 4px 16px 14px; }
+    .word-pill { display: inline-block; background: #F3F4F6; border: 1px solid var(--border); border-radius: 6px; padding: 3px 9px; font-size: 12.5px; margin: 4px 4px 0 0; }
+
+    /* detector */
+    .dim-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .dim { font-size: 12.5px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); }
+    .dim.flag { background: #FEF2F2; border-color: #FCA5A5; color: #991B1B; }
+    .dim.flag-info { background: #EFF6FF; border-color: #BFDBFE; color: #1E40AF; }
+    .dim.flag-soft { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
+
+    .check-status { font-size: 13px; margin-top: 8px; padding: 8px 12px; border-radius: 6px; display: none; }
+    .check-status.show { display: block; }
+    .check-status.ok  { background: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; }
+    .check-status.bad { background: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; }
+    .hit-list { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+    .hit-item { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+    .hit-item .hw { font-weight: 600; min-width: 64px; }
+
+    .preview-box { background: #F8FAFC; border: 1px dashed var(--border); border-radius: 6px; padding: 12px 14px; font-size: 14px; line-height: 1.8; min-height: 56px; white-space: pre-wrap; word-break: break-all; }
+    mark.hl-high { background: #FEE2E2; color: #991B1B; padding: 0 2px; border-radius: 3px; font-weight: 600; }
+    mark.hl-mid  { background: #FEF3C7; color: #92400E; padding: 0 2px; border-radius: 3px; }
+    mark.hl-ctx  { background: #DBEAFE; color: #1E40AF; padding: 0 2px; border-radius: 3px; }
+
+    .block-alert { background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; display: none; }
+    .block-alert.show { display: block; }
+    .block-alert h4 { color: #991B1B; font-size: 15px; }
+
+    .material-box { background: #F8FAFC; border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .chk { display: flex; align-items: center; gap: 8px; font-size: 13.5px; padding: 5px 0; cursor: pointer; }
+
+    /* rewrite cards */
+    .rewrite-card { border: 1px solid var(--border); border-radius: 8px; padding: 14px; background: var(--surface); }
+    .rewrite-card .bad { color: #991B1B; font-size: 13px; background: #FEF2F2; border: 1px solid #FECACA; border-radius: 6px; padding: 8px 10px; margin: 6px 0; }
+    .rewrite-card .good { color: #065F46; font-size: 13px; background: #ECFDF5; border: 1px solid #A7F3D0; border-radius: 6px; padding: 8px 10px; margin: 6px 0; }
+    .template-box { background: #0F172A; color: #E2E8F0; border-radius: 8px; padding: 14px 16px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
+
+    .step-list { counter-reset: s; list-style: none; padding: 0; }
+    .step-list li { position: relative; padding: 8px 0 8px 36px; font-size: 14px; border-bottom: 1px dashed var(--border); }
+    .step-list li::before { counter-increment: s; content: counter(s); position: absolute; left: 0; top: 8px; width: 24px; height: 24px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity .2s; }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal { background: var(--surface); border-radius: 12px; box-shadow: var(--shadow-md); width: 480px; max-width: calc(100vw - 40px); }
+    .modal-header { padding: 18px 22px 0; display: flex; align-items: center; justify-content: space-between; }
+    .modal-title { font-size: 16px; font-weight: 600; }
+    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-muted); }
+    .modal-body { padding: 14px 22px; font-size: 14px; }
+    .modal-footer { padding: 0 22px 18px; display: flex; justify-content: flex-end; gap: 8px; }
+
+    .toast-stack { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 2000; }
+    .toast { background: #1F2937; color: #fff; padding: 12px 16px; border-radius: var(--radius); font-size: 14px; box-shadow: var(--shadow-md); max-width: 340px; animation: slideIn .2s ease; }
+    .toast.success { background: #065F46; }
+    .toast.error   { background: #991B1B; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .proto-note { background: #FEFCE8; border: 1px dashed var(--warning); border-radius: 6px; padding: 8px 12px; font-size: 12px; color: #92400E; margin-top: 10px; }
+    .proto-note::before { content: "📝 注："; font-weight: 600; }
+    .text-muted { color: var(--text-muted); } .text-sm { font-size: 13px; }
+    .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+    .flex { display: flex; } .items-center { align-items: center; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; }
+    .justify-between { justify-content: space-between; } .w-full { width: 100%; }
+
+    /* library table */
+    .lib-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .lib-table th { text-align: left; padding: 9px 12px; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+    .lib-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .lib-table tr:hover td { background: #F8FAFC; }
+    .lib-table .w-op { width: 120px; }
+  </style>
+</head>
+<body>
+
+<header class="appbar">
+  <div class="appbar-logo">🎬 提示词合规助手</div>
+  <nav class="nav-tabs">
+    <div class="nav-tab active" onclick="showPage('page-home', this)">① 合规指南首页</div>
+    <div class="nav-tab" onclick="showPage('page-categories', this)">② 风险类别详解</div>
+    <div class="nav-tab" onclick="showPage('page-words', this)">③ 敏感词清单</div>
+    <div class="nav-tab" onclick="showPage('page-detect', this)">④ 提示词合规检测</div>
+    <div class="nav-tab" onclick="showPage('page-rewrite', this)">⑤ 改写示例与模板</div>
+    <div class="nav-tab" onclick="showPage('page-trouble', this)">⑥ 被拦截后排查</div>
+    <div class="nav-tab" onclick="showPage('page-library', this)">⑦ 敏感词库管理</div>
+  </nav>
+</header>
+
+<!-- ===== ① 合规指南首页 ===== -->
+<section class="page active" id="page-home">
+  <div class="page-head">
+    <div class="page-title">Seedance 2.0 提示词合规助手</div>
+    <div class="page-sub">基于公开规则整理的合规使用指南 · 综合判定逻辑 · 实时提示词检测与改写工具</div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h3 style="font-size:15px;margin-bottom:8px">📌 核心结论</h3>
+      <p class="text-sm">公开资料未提供完整敏感词库或阈值。<b>审核并非"出现某个词就拒绝"，而是综合判断</b>提示词语义、人物身份、版权特征、参考素材与最终生成内容。同一个词在不同上下文中结果不同（如"刀剑"出现在博物馆纪录片 vs 伤害教程，风险不同）。</p>
+      <div class="formula mt-3">
+        <span class="f-item">关键词风险</span><span class="f-op">+</span>
+        <span class="f-item">整句语义</span><span class="f-op">+</span>
+        <span class="f-item">人物身份</span><span class="f-op">+</span>
+        <span class="f-item">版权相似性</span><span class="f-op">+</span>
+        <span class="f-item">参考素材</span><span class="f-op">+</span>
+        <span class="f-item">预期画面</span><span class="f-op">+</span>
+        <span class="f-item">最终生成结果</span>
+      </div>
+      <div class="proto-note">本原型依据《Seedance 2.0 提示词敏感判定规则整理（公开资料）》改版，不构成平台官方完整规则。演示词为示例占位。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">系统会审核哪些环节</span></div>
+    <div class="card-body">
+      <div class="grid grid-2">
+        <div class="text-sm">• 提示词文字、错别字、缩写与整体意图</div>
+        <div class="text-sm">• 上传图片中的真人、人脸、裸露、武器、Logo、版权角色</div>
+        <div class="text-sm">• 参考视频中的人物、动作、字幕、场景</div>
+        <div class="text-sm">• 参考音频中的台词、音乐、声音身份、声音克隆</div>
+        <div class="text-sm">• 文字+图片+视频+音频组合后的整体含义</div>
+        <div class="text-sm">• 生成过程中间内容 & 最终视频画面/音频/字幕</div>
+      </div>
+      <p class="text-sm text-muted mt-3">⚠️ 提示词审核通过 ≠ 最终一定生成成功；画面/声音/字幕仍可能再次触发审核。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">八大风险类别</span><button class="btn btn-secondary btn-sm" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])">查看详解</button></div>
+    <div class="card-body">
+      <div class="grid grid-4">
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">1</div><div class="stat-label">涉政与公共安全</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">2</div><div class="stat-label">色情与性暗示</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">3</div><div class="stat-label">暴力与危险行为</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">4</div><div class="stat-label">违法犯罪</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">5</div><div class="stat-label">真人肖像与声音</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">6</div><div class="stat-label">版权与知识产权</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">7</div><div class="stat-label">侮辱歧视隐私</div></div>
+        <div class="stat-card" style="cursor:pointer" onclick="showPage('page-categories', document.querySelectorAll('.nav-tab')[1])"><div class="stat-value" style="font-size:16px">8</div><div class="stat-label">广告与商业宣传</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <h3 style="font-size:15px;margin-bottom:6px">🎯 最容易触发的往往不是孤立词，而是"组合"</h3>
+      <p class="text-sm">敏感主题 + 真实人物 + 具体危险细节 + 未授权素材。被拦截时，优先检查<b>整体语义</b>与<b>参考素材</b>。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ② 风险类别详解 ===== -->
+<section class="page" id="page-categories">
+  <div class="page-head">
+    <div class="page-title">八大风险类别详解</div>
+    <div class="page-sub">每类含"典型高风险内容"与"合规处理方向"。点击展开。</div>
+  </div>
+
+  <details class="cat" open>
+    <summary><span class="badge badge-red">高危</span> 1 · 涉政与公共安全</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>敏感人物/事件、虚构政治发言、伪造新闻/政府公告、恐怖极端内容、煽动仇恨对立、歪曲重大历史事件。</div>
+      <div class="row"><span class="lbl">合规方向：</span>避免真实敏感人物和事件；使用原创虚构背景；不伪造新闻。注意组合：真实政治人物+虚构发言、政府机构标志+虚构公告 也可能被拦。</div>
+    </div>
+  </details>
+  <details class="cat">
+    <summary><span class="badge badge-red">高危</span> 2 · 色情与性暗示</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>明确性行为、裸露、擦边镜头、偷拍、性交易；未成年人相关内容尤其严格。</div>
+      <div class="row"><span class="lbl">合规方向：</span>明确成年角色；去除裸露与性暗示；避免校园/幼态与情色元素组合。</div>
+    </div>
+  </details>
+  <details class="cat">
+    <summary><span class="badge badge-red">高危</span> 3 · 暴力与危险行为</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>血腥伤口、肢解、虐待、自残、袭击、武器/爆炸物制作教程。</div>
+      <div class="row"><span class="lbl">合规方向：</span>改为非血腥、非教学性表达；不展示可模仿步骤。</div>
+      <div class="row text-sm text-muted">并非所有"武器"词都拦截：博物馆古代刀剑(低风险) &lt; 展示用刀具伤害某人(较高) &lt; 逐步讲解制造爆炸物并实施袭击(极高)。</div>
+    </div>
+  </details>
+  <details class="cat">
+    <summary><span class="badge badge-red">高危</span> 4 · 违法犯罪</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>诈骗诱导转账、赌博、毒品教程、黑客攻击、伪造证件、犯罪操作指导。</div>
+      <div class="row"><span class="lbl">合规方向：</span>仅做反诈/普法/教育性呈现；不提供可执行步骤。影视化"警方抓诈骗犯"≠详细演示"诈骗话术步骤"。</div>
+    </div>
+  </details>
+  <details class="cat">
+    <summary><span class="badge badge-red">高危</span> 5 · 真人肖像与声音</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>未授权真人照片做主角、明星脸广告、虚假采访、声音克隆、深伪、把真人放入色情/犯罪/侮辱场景。</div>
+      <div class="row"><span class="lbl">合规方向：</span>使用原创虚构人物或合法授权素材；避免虚假代言与敏感场景。公众人物限制更严：即使已授权，也不能用于虚假代言/政治言论/诽谤。</div>
+    </div>
+  </details>
+  <details class="cat">
+    <summary><span class="badge badge-red">高危</span> 6 · 版权与知识产权</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>复刻知名电影片段、完整还原知名动漫角色、未授权音乐、品牌Logo/包装。</div>
+      <div class="row"><span class="lbl">合规方向：</span>使用原创人物、场景、音乐；不靠错别字/谐音规避。系统可能识别"服装+武器+发型配色+场景+台词+动作"组合，改名/拼音/缩写 ≠ 合规。</div>
+    </div>
+  </details>
+  <details class="cat">
+    <summary><span class="badge badge-yellow">中危</span> 7 · 侮辱、歧视与隐私</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>对真实人物侮辱诽谤、群体歧视、泄露电话地址、偷拍、恶意恶搞受害者。</div>
+      <div class="row"><span class="lbl">合规方向：</span>删除真实个人信息；避免贬损、羞辱或虚假指控。</div>
+    </div>
+  </details>
+  <details class="cat">
+    <summary><span class="badge badge-yellow">中危</span> 8 · 广告与商业宣传</summary>
+    <div class="cat-body">
+      <div class="row"><span class="lbl">典型高风险：</span>"全国第一/100%有效/绝对安全/永久治愈"等绝对化用语、伪造专家明星推荐、金融医疗不实承诺。</div>
+      <div class="row"><span class="lbl">合规方向：</span>采用可验证表述；不承诺绝对结果；注明必要限制条件。</div>
+    </div>
+  </details>
+  <div class="proto-note">类别与处置等级（高危/中危）为原型归纳，便于演示；真实平台判定为综合打分，非逐词对应。</div>
+</section>
+
+<!-- ===== ③ 敏感词清单 ===== -->
+<section class="page" id="page-words">
+  <div class="page-head">
+    <div class="page-title">敏感词清单</div>
+    <div class="page-sub">必须规避（100% 触发拦截）与建议谨慎使用（有拦截风险）两类。点击展开。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title"><span class="badge badge-red">100% 触发</span> 以下类型词汇必须规避</span></div>
+    <div class="card-body">
+      <details class="wg" open>
+        <summary>① 政治敏感类</summary>
+        <div class="wg-body"><span class="word-pill">国家/政党/领导人姓名及职务</span><span class="word-pill">涉港澳台敏感表述</span><span class="word-pill">涉疆敏感表述</span><span class="word-pill">涉藏敏感表述</span></div>
+      </details>
+      <details class="wg">
+        <summary>② 违法违规类</summary>
+        <div class="wg-body">
+          <span class="word-pill">毒品</span><span class="word-pill">赌博</span><span class="word-pill">色情</span><span class="word-pill">暴力</span>
+          <span class="word-pill">恐怖主义</span><span class="word-pill">宗教极端</span><span class="word-pill">枪支</span><span class="word-pill">弹药</span>
+          <span class="word-pill">管制刀具</span><span class="word-pill">诈骗</span>
+        </div>
+      </details>
+      <details class="wg">
+        <summary>③ 名人肖像类</summary>
+        <div class="wg-body"><span class="word-pill">明星/演员姓名</span><span class="word-pill">歌手</span><span class="word-pill">网红</span><span class="word-pill">政治人物姓名</span><span class="word-pill">昵称/别名</span>
+          <div class="form-hint mt-2">如需类似风格形象，必须在 Prompt 中明确注明"禁止参考任何真实人物"。</div>
+        </div>
+      </details>
+      <details class="wg">
+        <summary>④ 版权侵权类</summary>
+        <div class="wg-body"><span class="word-pill">漫威角色</span><span class="word-pill">迪士尼角色</span><span class="word-pill">国产动画/影视角色</span><span class="word-pill">游戏专属术语</span><span class="word-pill">影视/小说专属术语</span></div>
+      </details>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title"><span class="badge badge-yellow">谨慎使用</span> 以下类型有拦截风险（建议谨慎）</span></div>
+    <div class="card-body">
+      <details class="wg" open>
+        <summary>⑤ 宗教相关词汇</summary>
+        <div class="wg-body"><span class="word-pill">和尚</span><span class="word-pill">道士</span><span class="word-pill">唐僧</span><span class="word-pill">教堂</span><span class="word-pill">清真寺</span>
+          <div class="form-hint mt-2">需在 Prompt 中明确限定为普通文化/艺术场景，避免关联宗教敏感元素。</div>
+        </div>
+      </details>
+      <details class="wg">
+        <summary>⑥ 暴力元素</summary>
+        <div class="wg-body"><span class="word-pill">打斗</span><span class="word-pill">枪杀</span><span class="word-pill">死亡</span><span class="word-pill">血腥</span>
+          <div class="form-hint mt-2">需明确限定为游戏/影视特效场景，避免写实描述。</div>
+        </div>
+      </details>
+      <details class="wg">
+        <summary>⑦ 性感类描述</summary>
+        <div class="wg-body"><span class="word-pill">比基尼</span><span class="word-pill">露胸</span><span class="word-pill">丝袜</span><span class="word-pill">挑逗</span>
+          <div class="form-hint mt-2">过度暴露或带性暗示的表述大概率被拦截。</div>
+        </div>
+      </details>
+    </div>
+  </div>
+  <div class="proto-note">清单为公开资料归纳的示例词，真实审核还会结合整句语义与参考素材。错别字/谐音/拆字/暗语规避无效。</div>
+</section>
+
+<!-- ===== ④ 提示词合规检测 ===== -->
+<section class="page" id="page-detect">
+  <div class="page-head">
+    <div class="page-title">提示词合规检测</div>
+    <div class="page-sub">输入提示词实时检测，覆盖关键词与上下文风险；勾选参考素材以模拟多模态审核。</div>
+  </div>
+
+  <div class="block-alert" id="det-block">
+    <h4>⛔ 命中必须规避词，已硬拦截</h4>
+    <p id="det-block-detail" class="text-sm"></p>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">提示词</span><span class="badge badge-gray" id="det-count">0 字</span></div>
+    <div class="card-body">
+      <textarea class="form-control" id="det-text" rows="5" placeholder="例如：一位原创虚构的30岁成年角色，在雨中行走，镜头缓慢推近…" oninput="runDetect()"></textarea>
+      <div class="check-status" id="det-status"></div>
+      <div class="form-hint mt-2">实时高亮预览（红=必须规避 ｜ 黄=谨慎使用 ｜ 蓝=需结合上下文）：</div>
+      <div class="preview-box" id="det-preview">在上方输入提示词，命中项将在此高亮显示…</div>
+
+      <div class="mt-3">
+        <div class="form-label">风险维度（综合判定）</div>
+        <div class="dim-row" id="det-dims"></div>
+      </div>
+
+      <div class="hit-list" id="det-hits"></div>
+
+      <div class="material-box mt-3">
+        <div class="form-label">参考素材（影响多模态审核）</div>
+        <label class="chk"><input type="checkbox" id="m-face" onchange="runDetect()"> 上传图片含真人面孔</label>
+        <label class="chk"><input type="checkbox" id="m-logo" onchange="runDetect()"> 上传图片/视频含品牌 Logo</label>
+        <label class="chk"><input type="checkbox" id="m-ip" onchange="runDetect()"> 含知名影视/动漫/游戏角色</label>
+        <label class="chk"><input type="checkbox" id="m-audio" onchange="runDetect()"> 上传参考音频（音乐/台词）</label>
+      </div>
+
+      <div class="flex justify-between items-center mt-4">
+        <span class="text-sm text-muted">命中必须规避词→硬拦截；谨慎词/上下文词/参考素材风险→二次确认</span>
+        <button class="btn btn-primary btn-lg" onclick="generateDetect()">生成 / 提交</button>
+      </div>
+    </div>
+  </div>
+  <div class="proto-note">原型前端匹配仅演示；真实环境须接入服务端综合审核引擎（关键词+语义+人物/版权识别+素材+生成结果），前端可被绕过。上下文相关词（如刀剑/武器/泳装）演示"需结合上下文判断"，体现文档核心观点。</div>
+</section>
+
+<!-- ===== ⑤ 改写示例与模板 ===== -->
+<section class="page" id="page-rewrite">
+  <div class="page-head">
+    <div class="page-title">合规改写示例与模板</div>
+    <div class="page-sub">四类高风险表达 → 合规方向；点击"填入检测"可回到检测页验证。</div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="rewrite-card">
+      <span class="badge badge-red">真人肖像</span>
+      <div class="bad">高风险：让某位知名演员扮演医生推荐产品。</div>
+      <div class="good">合规：一位原创虚构的成年医生角色，不参考任何真实人物，在明亮诊室介绍产品一般功能，不作医疗效果承诺，不使用真实机构名称。</div>
+      <button class="btn btn-secondary btn-sm mt-2" onclick="fillDetect('一位原创虚构的成年医生角色，在明亮诊室介绍产品一般功能，不作医疗效果承诺')">填入检测</button>
+    </div>
+    <div class="rewrite-card">
+      <span class="badge badge-red">暴力血腥</span>
+      <div class="bad">高风险：角色被砍伤，大量鲜血喷出，特写伤口。</div>
+      <div class="good">合规：非血腥的动作电影场景，角色在冲突中被击倒，不展示伤口、血液或身体损伤细节，镜头表现紧张气氛和人物反应。</div>
+      <button class="btn btn-secondary btn-sm mt-2" onclick="fillDetect('非血腥的动作场景，角色在冲突中被击倒，不展示伤口血液细节，表现紧张气氛')">填入检测</button>
+    </div>
+    <div class="rewrite-card">
+      <span class="badge badge-red">版权侵权</span>
+      <div class="bad">高风险：完整复刻某知名超级英雄的服装、武器和经典电影镜头。</div>
+      <div class="good">合规：原创科幻英雄，银灰色模块化装甲，自创圆形能量盾，不参考任何现有影视/动漫/游戏角色，不出现品牌标志。</div>
+      <button class="btn btn-secondary btn-sm mt-2" onclick="fillDetect('原创科幻英雄，银灰色模块化装甲，自创圆形能量盾，不参考任何现有影视动漫游戏角色')">填入检测</button>
+    </div>
+    <div class="rewrite-card">
+      <span class="badge badge-yellow">未成年人</span>
+      <div class="bad">高风险：年轻女孩。</div>
+      <div class="good">合规：一位 30 岁的成年女性角色。</div>
+      <button class="btn btn-secondary btn-sm mt-2" onclick="fillDetect('一位30岁的成年女性角色')">填入检测</button>
+    </div>
+  </div>
+
+  <div class="card mt-3">
+    <div class="card-header"><span class="card-title">相对安全的提示词模板（可直接复制修改）</span><button class="btn btn-secondary btn-sm" onclick="copyTemplate()">复制模板</button></div>
+    <div class="card-body">
+      <div class="template-box" id="tpl">生成一段10秒的电影感视频。
+主体：一名原创虚构的30岁成年角色，不参考任何真实人物。
+场景：原创现代城市街道，不出现真实品牌、商标和影视IP。
+动作：角色在雨中缓慢行走，抬头看向远处灯光。
+镜头：中景跟拍，随后缓慢推近面部。
+风格：写实电影摄影，冷色调，柔和雨雾。
+安全要求：无裸露、无性暗示、无血腥、无危险行为、无未成年人、无真实公众人物、无政治内容、无版权角色、无品牌Logo、无受版权保护的音乐。
+声音：原创环境雨声和无歌词的原创氛围音乐。</div>
+    </div>
+  </div>
+  <div class="proto-note">改写示例来自公开指南。核心思路：用原创虚构人物/场景/音乐替代真实人物与版权内容，去除血腥裸露与可模仿危险细节，并显式声明安全要求。</div>
+</section>
+
+<!-- ===== ⑥ 被拦截后排查 ===== -->
+<section class="page" id="page-trouble">
+  <div class="page-head">
+    <div class="page-title">被拦截后排查方案</div>
+    <div class="page-sub">按步骤定位风险来源；切勿用谐音/错别字/暗语绕过审核。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">八步排查法</span></div>
+    <div class="card-body">
+      <ol class="step-list">
+        <li>移除全部参考图片、视频和音频，仅用文字测试。</li>
+        <li>删除真人姓名、公众人物、机构名称和敏感事件。</li>
+        <li>删除影视、动漫、游戏作品名以及品牌和 Logo。</li>
+        <li>明确人物是成年人，避免年龄模糊和幼态描述。</li>
+        <li>去除血腥、裸露、武器使用和危险行为细节。</li>
+        <li>将暴力场景改为非血腥、非教学性、不可模仿的表达。</li>
+        <li>使用原创人物、原创场景、原创音乐和合法授权素材。</li>
+        <li>每次只修改一个元素并重新测试，以定位风险来源。</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">⚠️ 不要采用的做法</span></div>
+    <div class="card-body">
+      <p class="text-sm">不要尝试用<b>谐音、错别字、拆字、编码或暗语</b>绕过审核。系统可能根据整句语义和图像特征继续识别，且刻意规避审核可能违反平台规则。如遇误判，应通过平台申诉或官方支持渠道处理。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">先检查参考素材</span></div>
+    <div class="card-body">
+      <p class="text-sm">很多时候问题不在提示词，而在参考素材：图片中有真人面孔、视频出现明星、音频是受版权保护的歌曲、图片有知名影视角色、画面带品牌 Logo、素材含暴露/血腥/武器。可先只用文字生成，通过后再逐个添加素材以定位触发来源。</p>
+      <button class="btn btn-primary btn-sm mt-2" onclick="showPage('page-detect', document.querySelectorAll('.nav-tab')[3])">去检测页勾选参考素材</button>
+    </div>
+  </div>
+  <div class="proto-note">排查流程与"不要绕过"警告均摘自公开指南，可作为产品内"被拦截帮助中心"的内容骨架。</div>
+</section>
+
+<!-- ===== ⑦ 敏感词库管理 ===== -->
+<section class="page" id="page-library">
+  <div class="page-head">
+    <div class="page-title">敏感词库管理</div>
+    <div class="page-sub">系统预置词库由平台合规团队维护（只读）；我的自定义词库可自由增删改，并实时生效于本人账号的提示词检测。</div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="flex gap-2">
+        <button class="btn btn-sm btn-primary" id="lib-tab-sys" onclick="switchLibTab('sys')">系统预置</button>
+        <button class="btn btn-sm btn-secondary" id="lib-tab-cus" onclick="switchLibTab('cus')">我的自定义</button>
+      </div>
+      <span class="text-sm text-muted" id="lib-stat"></span>
+    </div>
+    <div class="card-body">
+      <div class="flex items-center gap-2 mb-3">
+        <input class="form-control" id="lib-search" placeholder="搜索 词 / 分类 / 说明…" oninput="renderLib()">
+        <button class="btn btn-primary btn-sm" id="lib-add-btn" onclick="openLibModal()" style="display:none">+ 新增敏感词</button>
+      </div>
+
+      <!-- 系统预置（只读） -->
+      <div id="lib-sys-panel">
+        <table class="lib-table">
+          <thead><tr><th>敏感词</th><th>分类</th><th>等级</th><th>说明 / 备注</th></tr></thead>
+          <tbody id="lib-sys-body"></tbody>
+        </table>
+        <div class="proto-note">系统预置词库由平台合规团队维护，不可编辑或删除；仅作查阅参考。如需调整或遇到误判，请通过官方申诉渠道反馈。</div>
+      </div>
+
+      <!-- 我的自定义（增删改） -->
+      <div id="lib-cus-panel" style="display:none">
+        <div id="lib-empty" class="text-sm text-muted" style="display:none;padding:14px 0">暂无自定义词。点击「+ 新增敏感词」添加你希望在本账号提示词中拦截的词（如自家角色名、品牌名、业务禁用语）。</div>
+        <table class="lib-table">
+          <thead><tr><th>敏感词</th><th>分类</th><th>等级</th><th>说明 / 备注</th><th class="w-op">操作</th></tr></thead>
+          <tbody id="lib-cus-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 敏感词库 · 新增/编辑弹窗 ===== -->
+<div class="modal-overlay" id="lib-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="lib-modal-title">新增自定义敏感词</span>
+      <button class="modal-close" onclick="closeModal('lib-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="mb-2"><label class="form-label">敏感词 *</label><input class="form-control" id="lib-f-word" placeholder="如：自家角色名 / 品牌名 / 业务禁用语"></div>
+      <div class="mb-2"><label class="form-label">分类</label>
+        <select class="form-control" id="lib-f-cat">
+          <option>政治敏感</option><option>色情低俗</option><option>暴力危险</option><option>违法违规</option>
+          <option>名人肖像</option><option>版权侵权</option><option>宗教相关</option><option>暴力元素</option>
+          <option>性感类</option><option>广告违规</option><option>侮辱歧视</option><option>其他</option>
+        </select>
+      </div>
+      <div class="mb-2"><label class="form-label">等级</label>
+        <select class="form-control" id="lib-f-lv">
+          <option value="high">高危·硬拦截</option>
+          <option value="mid">中危·谨慎（二次确认）</option>
+          <option value="ctx">上下文相关</option>
+        </select>
+      </div>
+      <div class="mb-2"><label class="form-label">说明 / 备注</label><textarea class="form-control" id="lib-f-note" rows="2" placeholder="为何要拦截此词（可选）"></textarea></div>
+      <div class="proto-note">自定义词仅对本账号的提示词检测生效；系统预置红线不受自定义影响。原型前端存储，真实环境落库到用户词表服务。</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('lib-modal')">取消</button>
+      <button class="btn btn-primary" onclick="saveLib()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 敏感词库 · 删除确认弹窗 ===== -->
+<div class="modal-overlay" id="lib-del-modal">
+  <div class="modal" style="width:420px">
+    <div class="modal-header">
+      <span class="modal-title">⚠ 确认删除</span>
+      <button class="modal-close" onclick="closeModal('lib-del-modal')">×</button>
+    </div>
+    <div class="modal-body"><p class="text-sm" id="lib-del-text"></p></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('lib-del-modal')">取消</button>
+      <button class="btn btn-danger" onclick="confirmDel()">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Confirm Modal (detect) ===== -->
+<div class="modal-overlay" id="det-confirm-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">⚠ 检测到需谨慎的内容</span>
+      <button class="modal-close" onclick="closeModal('det-confirm-modal')">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-sm text-muted">以下内容有拦截风险（依赖上下文或参考素材），确认仍继续生成吗？</p>
+      <div class="hit-list mt-2" id="det-confirm-hits"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('det-confirm-modal')">取消</button>
+      <button class="btn btn-primary" onclick="closeModal('det-confirm-modal'); showToast('已确认，开始生成', 'success')">确认继续生成</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<script>
+  /* ===== Demo dictionary (示例占位，依据公开指南归纳) ===== */
+  const DICT = [
+    // 100% 触发（高危·硬拦截）
+    { w:'毒品', lv:'high', cat:'违法违规', note:'涉违法违规，100%触发拦截' },
+    { w:'赌博', lv:'high', cat:'违法违规', note:'涉违法违规，100%触发拦截' },
+    { w:'色情', lv:'high', cat:'违法违规', note:'涉违法违规，100%触发拦截' },
+    { w:'暴力', lv:'high', cat:'违法违规', note:'涉违法违规，100%触发拦截' },
+    { w:'恐怖主义', lv:'high', cat:'违法违规', note:'涉违法违规，100%触发拦截' },
+    { w:'宗教极端', lv:'high', cat:'违法违规', note:'涉违法违规，100%触发拦截' },
+    { w:'枪支', lv:'high', cat:'违法违规', note:'涉武器，100%触发拦截' },
+    { w:'弹药', lv:'high', cat:'违法违规', note:'涉武器，100%触发拦截' },
+    { w:'管制刀具', lv:'high', cat:'违法违规', note:'涉武器，100%触发拦截' },
+    { w:'诈骗', lv:'high', cat:'违法违规', note:'涉违法违规，100%触发拦截' },
+    { w:'漫威', lv:'high', cat:'版权侵权', note:'知名IP，100%触发拦截' },
+    { w:'迪士尼', lv:'high', cat:'版权侵权', note:'知名IP，100%触发拦截' },
+    { w:'明星脸', lv:'high', cat:'名人肖像', note:'未授权真人/明星，100%触发拦截；如需类似风格需注明禁止参考任何真实人物' },
+    // 谨慎使用（中危）
+    { w:'和尚', lv:'mid', cat:'宗教相关', note:'建议谨慎，限普通文化/艺术场景' },
+    { w:'道士', lv:'mid', cat:'宗教相关', note:'建议谨慎，限普通文化/艺术场景' },
+    { w:'唐僧', lv:'mid', cat:'宗教相关', note:'建议谨慎，限普通文化/艺术场景' },
+    { w:'教堂', lv:'mid', cat:'宗教相关', note:'建议谨慎，限普通文化/艺术场景' },
+    { w:'清真寺', lv:'mid', cat:'宗教相关', note:'建议谨慎，限普通文化/艺术场景' },
+    { w:'打斗', lv:'mid', cat:'暴力元素', note:'建议谨慎，限游戏/影视特效，避免写实' },
+    { w:'枪杀', lv:'mid', cat:'暴力元素', note:'建议谨慎，限游戏/影视特效' },
+    { w:'死亡', lv:'mid', cat:'暴力元素', note:'建议谨慎，限游戏/影视特效' },
+    { w:'血腥', lv:'mid', cat:'暴力元素', note:'建议谨慎，避免写实血腥细节' },
+    { w:'比基尼', lv:'mid', cat:'性感类', note:'过度暴露/性暗示大概率拦截' },
+    { w:'露胸', lv:'mid', cat:'性感类', note:'过度暴露/性暗示大概率拦截' },
+    { w:'丝袜', lv:'mid', cat:'性感类', note:'带性暗示表述大概率拦截' },
+    { w:'挑逗', lv:'mid', cat:'性感类', note:'带性暗示表述大概率拦截' },
+    // 上下文相关（需结合上下文判断）
+    { w:'刀剑', lv:'ctx', cat:'武器(上下文)', note:'风险取决于上下文：博物馆陈列 vs 伤害教程结果不同' },
+    { w:'武器', lv:'ctx', cat:'武器(上下文)', note:'结合上下文判断，避免可模仿的危险使用' },
+    { w:'泳装', lv:'ctx', cat:'服装(上下文)', note:'普通泳装偏低风险，过度暴露/性暗示则高风险' },
+    { w:'战争', lv:'ctx', cat:'场景(上下文)', note:'结合具体描述与参考素材判断' },
+    { w:'血', lv:'ctx', cat:'元素(上下文)', note:'单独出现未必拦截，写实血腥细节会升风险' },
+    { w:'枪', lv:'ctx', cat:'武器(上下文)', note:'结合上下文判断' },
+  ];
+  const LV_BADGE = { high:'badge-red', mid:'badge-yellow', ctx:'badge-blue' };
+  const LV_LABEL = { high:'高危·硬拦截', mid:'中危·谨慎', ctx:'上下文相关' };
+
+  /* ===== 敏感词库管理：系统预置（只读） + 自定义（增删改） ===== */
+  // 系统预置 = 检测词库本体（不可编辑，来源 system）
+  const SYS_WORDS = DICT.map(d => ({ ...d }));
+  // 自定义词库初始示例，可自由增删改，仅本账号生效
+  let CUSTOM_WORDS = [
+    { id: 1, w:'自家企业品牌A', lv:'high', cat:'广告违规', note:'本账号业务禁用，避免出现在提示词' },
+    { id: 2, w:'占位角色名X',   lv:'mid',  cat:'其他',     note:'项目组约定不使用的占位角色名' },
+  ];
+  let customSeq = 3;
+  let libTab = 'sys';
+  let libEditId = null;
+  let libDelId = null;
+
+  function detect(text) {
+    const hits = [];
+    if (!text) return hits;
+    // 系统预置 + 本账号自定义词（自定义词实时生效于检测）
+    const all = DICT.concat(CUSTOM_WORDS.map(c => ({ ...c, custom: true })));
+    all.forEach(d => {
+      let i = text.indexOf(d.w);
+      while (i !== -1) { hits.push({ ...d, index: i, length: d.w.length, custom: !!d.custom }); i = text.indexOf(d.w, i + d.w.length); }
+    });
+    return hits;
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function showPage(id, el){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    el.classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function getMaterialRisks() {
+    const r = [];
+    if (document.getElementById('m-face').checked) r.push({ label:'参考图片含真人面孔', note:'需身份验证/合法授权，未入库素材更审慎拦截' });
+    if (document.getElementById('m-logo').checked) r.push({ label:'含品牌 Logo', note:'可能触发版权/广告审核' });
+    if (document.getElementById('m-ip').checked)   r.push({ label:'含知名影视/动漫/游戏角色', note:'版权相似性强，高风险' });
+    if (document.getElementById('m-audio').checked) r.push({ label:'上传参考音频', note:'音乐/台词可能涉及版权与声音身份' });
+    return r;
+  }
+
+  function runDetect() {
+    const text = document.getElementById('det-text').value;
+    document.getElementById('det-count').textContent = text.length + ' 字';
+    const hits = detect(text);
+    const mats = getMaterialRisks();
+    // status
+    const st = document.getElementById('det-status');
+    st.className = 'check-status';
+    if (!hits.length && !mats.length) { st.classList.add('show','ok'); st.textContent = '✓ 未检测到明显风险'; }
+    else if (hits.some(h=>h.lv==='high')) { st.classList.add('show','bad'); st.textContent = '⛔ 命中必须规避词，将被硬拦截'; }
+    else { st.classList.add('show','bad'); st.textContent = '⚠ 检测到需谨慎内容或参考素材风险'; }
+    // preview highlight
+    const pv = document.getElementById('det-preview');
+    if (!text) { pv.textContent = '在上方输入提示词，命中项将在此高亮显示…'; }
+    else {
+      let out='', cur=0;
+      hits.slice().sort((a,b)=>a.index-b.index).forEach(h=>{
+        if (h.index<cur) return;
+        out += escapeHtml(text.slice(cur,h.index));
+        out += `<mark class="hl-${h.lv}">${escapeHtml(h.w)}</mark>`;
+        cur = h.index + h.length;
+      });
+      out += escapeHtml(text.slice(cur));
+      pv.innerHTML = out;
+    }
+    // hit list
+    const hl = document.getElementById('det-hits');
+    let items = hits.map(h=>`<div class="hit-item"><span class="badge ${LV_BADGE[h.lv]}">${LV_LABEL[h.lv]}</span>${h.custom?'<span class="badge badge-green">自定义</span>':''}<span class="hw">${escapeHtml(h.w)}</span><span class="text-sm text-muted">${escapeHtml(h.cat)} · ${escapeHtml(h.note)}</span></div>`).join('');
+    items += mats.map(m=>`<div class="hit-item"><span class="badge badge-blue">参考素材</span><span class="hw">${escapeHtml(m.label)}</span><span class="text-sm text-muted">${escapeHtml(m.note)}</span></div>`).join('');
+    hl.innerHTML = items;
+    // dimensions
+    const dims = [
+      { name:'关键词风险', on: hits.length>0, type:'flag' },
+      { name:'整句语义风险', on: hits.some(h=>h.lv==='mid'||h.lv==='ctx'), type:'flag-soft' },
+      { name:'人物身份风险', on: hits.some(h=>h.cat==='名人肖像')||mats.some(m=>m.label.includes('真人')), type:'flag' },
+      { name:'版权相似性风险', on: hits.some(h=>h.cat==='版权侵权')||mats.some(m=>m.label.includes('角色')||m.label.includes('Logo')), type:'flag' },
+      { name:'参考素材风险', on: mats.length>0, type:'flag-info' },
+      { name:'生成结果风险', on:true, type:'' , note:'需服务端生成后判定' },
+    ];
+    document.getElementById('det-dims').innerHTML = dims.map(d=>{
+      const cls = d.on ? (d.type? 'dim flag '+d.type.replace('flag ','flag-').replace('flag','flag') : 'dim flag') : 'dim';
+      const realCls = d.on ? (d.type==='flag'?'dim flag':d.type==='flag-soft'?'dim flag-soft':d.type==='flag-info'?'dim flag-info':'dim') : 'dim';
+      return `<span class="${realCls}">${d.name}${d.on&&d.note?' · '+d.note:''}</span>`;
+    }).join('');
+  }
+
+  function generateDetect() {
+    document.getElementById('det-block').classList.remove('show');
+    const hits = detect(document.getElementById('det-text').value);
+    const mats = getMaterialRisks();
+    const hasHigh = hits.some(h=>h.lv==='high');
+    const hasCaut = hits.some(h=>h.lv==='mid'||h.lv==='ctx') || mats.length>0;
+    if (hasHigh) {
+      const words = hits.filter(h=>h.lv==='high').map(h=>h.w).join('、');
+      document.getElementById('det-block-detail').textContent = '命中必须规避词（' + words + '），属平台红线，已阻止生成。如有疑问可通过官方申诉渠道处理。';
+      document.getElementById('det-block').classList.add('show');
+      showToast('高危：已硬拦截', 'error');
+      return;
+    }
+    if (hasCaut) {
+      const items = hits.filter(h=>h.lv!=='high').map(h=>`<div class="hit-item"><span class="badge ${LV_BADGE[h.lv]}">${LV_LABEL[h.lv]}</span><span class="hw">${escapeHtml(h.w)}</span><span class="text-sm text-muted">${escapeHtml(h.note)}</span></div>`).join('');
+      const mitems = mats.map(m=>`<div class="hit-item"><span class="badge badge-blue">参考素材</span><span class="hw">${escapeHtml(m.label)}</span><span class="text-sm text-muted">${escapeHtml(m.note)}</span></div>`).join('');
+      document.getElementById('det-confirm-hits').innerHTML = items + mitems;
+      document.getElementById('det-confirm-modal').classList.add('open');
+      return;
+    }
+    showToast('校验通过，已开始生成', 'success');
+  }
+
+  function fillDetect(text) {
+    showPage('page-detect', document.querySelectorAll('.nav-tab')[3]);
+    document.getElementById('det-text').value = text;
+    runDetect();
+  }
+  function copyTemplate() {
+    const t = document.getElementById('tpl').textContent;
+    if (navigator.clipboard) navigator.clipboard.writeText(t).then(()=>showToast('模板已复制','success'));
+    else showToast('请手动复制','success');
+  }
+
+  function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click', e=>{ if(e.target===e.currentTarget) m.classList.remove('open'); }));
+  function showToast(msg, type=''){ const t=document.createElement('div'); t.className='toast '+type; t.textContent=msg; document.getElementById('toast-stack').appendChild(t); setTimeout(()=>t.remove(),3000); }
+
+  /* ===== 敏感词库管理：Tab 切换 / 渲染 / 增删改 ===== */
+  function switchLibTab(t) {
+    libTab = t;
+    document.getElementById('lib-tab-sys').className = 'btn btn-sm ' + (t === 'sys' ? 'btn-primary' : 'btn-secondary');
+    document.getElementById('lib-tab-cus').className = 'btn btn-sm ' + (t === 'cus' ? 'btn-primary' : 'btn-secondary');
+    document.getElementById('lib-sys-panel').style.display = t === 'sys' ? 'block' : 'none';
+    document.getElementById('lib-cus-panel').style.display = t === 'cus' ? 'block' : 'none';
+    document.getElementById('lib-add-btn').style.display = t === 'cus' ? 'inline-flex' : 'none';
+    renderLib();
+  }
+
+  function renderLib() {
+    const q = (document.getElementById('lib-search').value || '').trim().toLowerCase();
+    if (libTab === 'sys') {
+      const rows = SYS_WORDS.filter(d => !q || (d.w + d.cat + d.note).toLowerCase().includes(q));
+      document.getElementById('lib-sys-body').innerHTML = rows.map(d => `
+        <tr>
+          <td><b>${escapeHtml(d.w)}</b></td>
+          <td><span class="badge badge-gray">${escapeHtml(d.cat)}</span></td>
+          <td><span class="badge ${LV_BADGE[d.lv]}">${LV_LABEL[d.lv]}</span></td>
+          <td class="text-sm text-muted">${escapeHtml(d.note)}</td>
+        </tr>`).join('') || `<tr><td colspan="4" class="text-sm text-muted" style="text-align:center;padding:16px">无匹配结果</td></tr>`;
+      document.getElementById('lib-stat').textContent = `系统预置 ${SYS_WORDS.length} 条（只读）`;
+    } else {
+      const rows = CUSTOM_WORDS.filter(d => !q || (d.w + d.cat + d.note).toLowerCase().includes(q));
+      document.getElementById('lib-cus-body').innerHTML = rows.map(d => `
+        <tr>
+          <td><b>${escapeHtml(d.w)}</b></td>
+          <td><span class="badge badge-gray">${escapeHtml(d.cat)}</span></td>
+          <td><span class="badge ${LV_BADGE[d.lv]}">${LV_LABEL[d.lv]}</span></td>
+          <td class="text-sm text-muted">${escapeHtml(d.note || '—')}</td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="openLibModal(${d.id})">编辑</button>
+            <button class="btn btn-danger btn-sm" onclick="openDelModal(${d.id})">删除</button>
+          </td>
+        </tr>`).join('') || `<tr><td colspan="5" class="text-sm text-muted" style="text-align:center;padding:16px">无匹配结果</td></tr>`;
+      document.getElementById('lib-empty').style.display = CUSTOM_WORDS.length ? 'none' : 'block';
+      document.getElementById('lib-stat').textContent = `我的自定义 ${CUSTOM_WORDS.length} 条`;
+    }
+  }
+
+  function openLibModal(id) {
+    libEditId = id || null;
+    document.getElementById('lib-modal-title').textContent = id ? '编辑自定义敏感词' : '新增自定义敏感词';
+    if (id) {
+      const d = CUSTOM_WORDS.find(x => x.id === id);
+      document.getElementById('lib-f-word').value = d.w;
+      document.getElementById('lib-f-cat').value = d.cat;
+      document.getElementById('lib-f-lv').value = d.lv;
+      document.getElementById('lib-f-note').value = d.note || '';
+    } else {
+      document.getElementById('lib-f-word').value = '';
+      document.getElementById('lib-f-cat').value = '其他';
+      document.getElementById('lib-f-lv').value = 'high';
+      document.getElementById('lib-f-note').value = '';
+    }
+    document.getElementById('lib-modal').classList.add('open');
+  }
+
+  function saveLib() {
+    const w = document.getElementById('lib-f-word').value.trim();
+    if (!w) { showToast('请填写敏感词', 'error'); return; }
+    const cat = document.getElementById('lib-f-cat').value;
+    const lv = document.getElementById('lib-f-lv').value;
+    const note = document.getElementById('lib-f-note').value.trim();
+    if (libEditId) {
+      const d = CUSTOM_WORDS.find(x => x.id === libEditId);
+      Object.assign(d, { w, cat, lv, note });
+      showToast('已更新自定义词', 'success');
+    } else {
+      CUSTOM_WORDS.push({ id: customSeq++, w, cat, lv, note });
+      showToast('已新增自定义词', 'success');
+    }
+    closeModal('lib-modal');
+    renderLib();
+  }
+
+  function openDelModal(id) {
+    libDelId = id;
+    const d = CUSTOM_WORDS.find(x => x.id === id);
+    document.getElementById('lib-del-text').textContent = `确定要删除自定义敏感词「${d.w}」（分类：${d.cat}）吗？删除后该词将不再在本账号提示词检测中拦截。`;
+    document.getElementById('lib-del-modal').classList.add('open');
+  }
+
+  function confirmDel() {
+    CUSTOM_WORDS = CUSTOM_WORDS.filter(x => x.id !== libDelId);
+    closeModal('lib-del-modal');
+    renderLib();
+    showToast('已删除', 'success');
+  }
+
+  // 初始化词库表格（默认系统预置 Tab）
+  renderLib();
+</script>
+</body>
+</html>

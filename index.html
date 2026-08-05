@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漫剧平台内容安全审核系统</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;background:#0d1117;color:#e6edf3;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.container{max-width:720px;width:90%;padding:40px 0}
+h1{font-size:28px;margin-bottom:8px;background:linear-gradient(135deg,#a78bfa,#2dd4bf);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:#8b949e;font-size:14px;margin-bottom:32px}
+.card{display:block;background:#161b24;border:1px solid #2a313c;border-radius:12px;padding:20px 24px;margin-bottom:14px;text-decoration:none;color:#e6edf3;transition:.2s}
+.card:hover{border-color:#58a6ff;transform:translateY(-2px)}
+.card h2{font-size:16px;margin-bottom:6px}
+.card p{font-size:13px;color:#8b949e;line-height:1.6}
+.card .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:4px;margin-right:6px;margin-top:8px}
+.tag-l1{background:#2a2140;color:#a78bfa}
+.tag-l2{background:#3a2a18;color:#f0883e}
+.tag-l3{background:#103a33;color:#2dd4bf}
+.footer{margin-top:32px;text-align:center;color:#484f58;font-size:12px}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>漫剧平台内容安全审核系统</h1>
+<p class="subtitle">敏感词库 + 规则引擎 + AI 模型 · 三层架构原型与文档</p>
+
+<a class="card" href="漫剧平台-三层审核系统-原型.html">
+<h2>三层审核系统原型（推荐）</h2>
+<p>L1 敏感词库 + L2 规则引擎 + L3 AI 模型，含系统总览、词库管理、规则配置、AI模型配置、审核演示、数据看板六页</p>
+<span class="tag tag-l1">L1 词库</span><span class="tag tag-l2">L2 规则</span><span class="tag tag-l3">L3 AI</span>
+</a>
+
+<a class="card" href="敏感词库-合规助手-原型.html">
+<h2>合规助手原型</h2>
+<p>基于 Seedance 2.0 合规指南的提示词合规检测，含指南首页、风险类别、敏感词清单、实时检测、改写模板、排查六页</p>
+</a>
+
+<a class="card" href="敏感词库-交互原型.html">
+<h2>敏感词库交互原型（第一版）</h2>
+<p>角色创建、分镜提示词、拦截演示、词库管理、数据看板五页，词库管理含系统预置与自定义增删改</p>
+</a>
+
+<a class="card" href="敏感词库功能-需求概要.md">
+<h2>需求概要文档</h2>
+<p>需求规划文档 v0.2，含分类分级体系、需求池优先级、用户故事、指标、非目标与待确认清单</p>
+</a>
+
+<div class="footer">基于 Seedance 2.0 公开合规指南 · 2026-08</div>
+</div>
+</body>
+</html>
