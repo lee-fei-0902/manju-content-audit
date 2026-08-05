@@ -693,7 +693,7 @@ function renderScoreModel(){
 function fillCatSelect(sel){sel.innerHTML=CATS.map(c=>`<option>${c}</option>`).join('');}
 function renderL1(){
   const q=($('l1-search').value||'').trim().toLowerCase();
-  const filter=v=>(l1FilterLv==='all'||v===l1FilterLv)&&(!q||v.w.toLowerCase().includes(q)||v.cat.includes(q)||(v.note||'').includes(q));
+  const filter=v=>(l1FilterLv==='all'||v.lv===l1FilterLv)&&(!q||v.w.toLowerCase().includes(q)||v.cat.includes(q)||(v.note||'').includes(q));
   // preset
   const pt=PRESET.filter(filter);
   $('l1-tbody').innerHTML=pt.length?pt.map(d=>`<tr>
